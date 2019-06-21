@@ -1,15 +1,7 @@
-/*
 
-  Example for sending code from Arduino to Chacon & Zap power outlet
-
-  | Transmitter | Arduino   | Wemos D1
-  |-------------|-----------|----------
-  | VCC         | 5V        | 5V
-  | GND         | GND       | GND
-  | DATA        | D10       | D1
-
-*/
-
+#include <WiFiManager.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
 #include <RCSwitch.h>
 #include "output.h"
 RCSwitch sender = RCSwitch();
@@ -29,6 +21,22 @@ const char* ON[] = {
   "0FF001FF0001"
 };
 
+const char* getStates[] = {
+  "lights/zap1/getState",
+  "lights/zap2/getState",
+  "lights/zap3/getState",
+  "lights/zap4/getState",
+  "lights/zap5/getState"
+};
+
+const char* setStates[] = {
+  "lights/zap1/setState",
+  "lights/zap2/setState",
+  "lights/zap3/setState",
+  "lights/zap4/setState",
+  "lights/zap5/setState"
+};
+
 const char* OFF[] = {
   "0FF00FFF0110",
   "0FF00FFF1010",
@@ -37,9 +45,105 @@ const char* OFF[] = {
   "0FF001FF0010"
 };
 
+// MQTT
+
+WiFiClient espClient;
+PubSubClient MQTTclient(espClient);
+
+#define mqtt_server "homebridge"
+
+unsigned long startMQTTmillis;
+unsigned long currentMQTTmillis;
+const unsigned long MQTTdelay = 5000;
+const size_t capacity = JSON_OBJECT_SIZE(4);
+
+void MQTTcallback(char* topic, byte* payload, unsigned int length) {
+
+  DynamicJsonDocument MQTTSubPayload(capacity);
+
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (unsigned int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+
+  for (size_t i = 0; i < 5; i++) {          // loop setStates
+    bool test = !strcmp(setStates[i], topic);
+          // test if in `i` topics are identic
+    Serial.println(setStates[i]);
+    Serial.println(topic);
+    Serial.println(test);
+    if (test) {
+
+      deserializeJson(MQTTSubPayload, payload, length);
+
+      if (MQTTSubPayload.containsKey("On")) {
+
+        bool value = MQTTSubPayload["On"];
+        if (value) sender.sendTriState(ON[i]);
+        else  sender.sendTriState(OFF[i]);
+
+      } else {
+
+        Serial.println("No Valid Payload");
+
+      }
+    }
+  }
+}
+
+boolean reconnect() {
+
+  if (MQTTclient.connect("RCSwitch")) {
+
+    Serial.println("MQTT is connected...");
+    MQTTclient.subscribe("lights/zap1/setState");
+    MQTTclient.subscribe("lights/zap2/setState");
+    MQTTclient.subscribe("lights/zap3/setState");
+    MQTTclient.subscribe("lights/zap4/setState");
+    MQTTclient.subscribe("lights/zap5/setState");
+
+  }
+
+  return MQTTclient.connected();
+}
+
+void sendLightStatusOverMQTT(const char* topic, bool state) {
+
+    DynamicJsonDocument MQTTPubPayload(capacity);
+
+    MQTTPubPayload["On"] = state;
+
+    char buffer[512];
+    size_t n = serializeJson(MQTTPubPayload, buffer);
+    MQTTclient.publish(topic, buffer, n);
+}
+
 void setup() {
 
   Serial.begin(115200);
+  while (!Serial); // wait for serial attach
+
+  Serial.flush();
+
+  Serial.println("Initializing... RC-Switch");
+  Serial.println();
+
+  WiFiManager wifiManager;
+
+  //reset saved settings
+  //wifiManager.resetSettings();
+
+  wifiManager.autoConnect("RCSwitch");
+
+  // this sets the MQTT client and its callback
+  Serial.println("Setting MQTT client...");
+  MQTTclient.setServer(mqtt_server, 1883);
+  MQTTclient.setCallback(MQTTcallback);
+  startMQTTmillis = 0;
+
   sender.enableTransmit(transmit_pin);
   sender.setPulseLength(pulseLength);
   sender.setRepeatTransmit(repeatTransmit);
@@ -52,40 +156,39 @@ void setup() {
 
 void loop() {
 
-  //-- Zap power outlet --
+  if (!MQTTclient.connected()) {
 
-  // //ON 1
-  // sender.sendTriState(ON[0]); Serial.println("Zap #1: ON"); delay(sleep);
-  // //ON 2
-  // sender.sendTriState(ON[1]); Serial.println("Zap #2: ON"); delay(sleep);
-  // //ON 3
-  // sender.sendTriState(ON[2]); Serial.println("Zap #3: ON"); delay(sleep);
-  // //ON 4
-  // sender.sendTriState(ON[3]); Serial.println("Zap #4: ON"); delay(sleep);
-  // //ON 5
-  // sender.sendTriState(ON[4]); Serial.println("Zap #4: ON"); delay(sleep);
+    currentMQTTmillis = millis();
 
-  // //OFF 1
-  // sender.sendTriState(OFF[0]); Serial.println("Zap #1: OFF"); delay(sleep);
-  // //OFF 2
-  // sender.sendTriState(OFF[1]); Serial.println("Zap #2: OFF"); delay(sleep);
-  // //OFF 3
-  // sender.sendTriState(OFF[2]); Serial.println("Zap #3: OFF"); delay(sleep);
-  // //OFF 4
-  // sender.sendTriState(OFF[3]); Serial.println("Zap #4: OFF"); delay(sleep);
-  // //OFF 5
-  // sender.sendTriState(OFF[4]); Serial.println("Zap #4: OFF"); delay(sleep);
+    if (currentMQTTmillis - startMQTTmillis > MQTTdelay) {
+
+      Serial.println("MQTT not connected...");
+      Serial.println("reconnecting...");
+      startMQTTmillis = currentMQTTmillis;
+
+      // Attempt to reconnect
+      if (reconnect()) {
+        startMQTTmillis = 0;
+      }
+    }
+  } else {
+
+    // Client connected
+    MQTTclient.loop();
+  }
 
   if (receiver.available()) {
 
     for (size_t i = 0; i < 4; i++) {
       bool test = testTristate(receiver.getReceivedValue(), receiver.getReceivedBitlength(), ON[i]);
+      if (test) sendLightStatusOverMQTT(getStates[i], true);
       Serial.print(i);
       Serial.print(test);
     }
 
     for (size_t i = 0; i < 4; i++) {
       bool test = testTristate(receiver.getReceivedValue(), receiver.getReceivedBitlength(), OFF[i]);
+      if (test) sendLightStatusOverMQTT(getStates[i], false);
       Serial.print(i);
       Serial.print(test);
     }

@@ -86,7 +86,7 @@ bool testTristate(unsigned long decimal, unsigned int length, const char *trista
     const char* receivedTristateCode = bin2tristate( b);
     Serial.print(" Tri-State: ");
     Serial.print( receivedTristateCode );
-    const bool testResult = tristateCode == receivedTristateCode;
-    return testResult;
+    const bool testResult = strcmp(tristateCode, receivedTristateCode);
+    return !testResult;
   }
 }
