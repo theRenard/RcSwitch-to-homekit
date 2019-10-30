@@ -1,213 +1,44 @@
-![example](/img/example.gif "example")
+![](/img/example.gif "An remote and a smartphone both working with HomeKit")
 
-```
-[
-    {
-        "id": "385de9b.c4c7a96",
-        "type": "homekit-service",
-        "z": "abf1ab95.46d11",
-        "isParent": true,
-        "bridge": "870ebb80.5cee28",
-        "parentService": "",
-        "name": "Scale",
-        "serviceName": "Lightbulb",
-        "topic": "",
-        "filter": false,
-        "manufacturer": "leRenard",
-        "model": "Zap",
-        "serialNo": "12345737B",
-        "characteristicProperties": "",
-        "x": 670,
-        "y": 240,
-        "wires": [
-            [
-                "a00e4a92.69b9f",
-                "151522e4.646405"
-            ]
-        ]
-    },
-    {
-        "id": "ed4e951a.091f98",
-        "type": "mqtt out",
-        "z": "abf1ab95.46d11",
-        "name": "zap Set State",
-        "topic": "lights/zap1/setState",
-        "qos": "0",
-        "retain": "",
-        "broker": "4cfc6208.43ea64",
-        "x": 1120,
-        "y": 240,
-        "wires": []
-    },
-    {
-        "id": "909cdcf0.90f0f",
-        "type": "inject",
-        "z": "abf1ab95.46d11",
-        "name": "Zap On",
-        "topic": "",
-        "payload": "{\"On\":true}",
-        "payloadType": "json",
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "x": 430,
-        "y": 180,
-        "wires": [
-            [
-                "385de9b.c4c7a96"
-            ]
-        ]
-    },
-    {
-        "id": "151522e4.646405",
-        "type": "debug",
-        "z": "abf1ab95.46d11",
-        "name": "",
-        "active": false,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "x": 870,
-        "y": 180,
-        "wires": []
-    },
-    {
-        "id": "babac8c.868f838",
-        "type": "mqtt in",
-        "z": "abf1ab95.46d11",
-        "name": "Zap Get State",
-        "topic": "lights/zap1/getState",
-        "qos": "0",
-        "datatype": "auto",
-        "broker": "4cfc6208.43ea64",
-        "x": 170,
-        "y": 240,
-        "wires": [
-            [
-                "66925df8.888f94"
-            ]
-        ]
-    },
-    {
-        "id": "64f56124.a3fd8",
-        "type": "debug",
-        "z": "abf1ab95.46d11",
-        "name": "",
-        "active": false,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "x": 690,
-        "y": 300,
-        "wires": []
-    },
-    {
-        "id": "66925df8.888f94",
-        "type": "json",
-        "z": "abf1ab95.46d11",
-        "name": "String to Json",
-        "property": "payload",
-        "action": "",
-        "pretty": false,
-        "x": 440,
-        "y": 240,
-        "wires": [
-            [
-                "64f56124.a3fd8",
-                "385de9b.c4c7a96"
-            ]
-        ]
-    },
-    {
-        "id": "a00e4a92.69b9f",
-        "type": "switch",
-        "z": "abf1ab95.46d11",
-        "name": "check hap.context",
-        "property": "hap.context",
-        "propertyType": "msg",
-        "rules": [
-            {
-                "t": "nnull"
-            }
-        ],
-        "checkall": "true",
-        "repair": false,
-        "outputs": 1,
-        "x": 890,
-        "y": 240,
-        "wires": [
-            [
-                "ed4e951a.091f98"
-            ]
-        ]
-    },
-    {
-        "id": "3c594aff.68731e",
-        "type": "inject",
-        "z": "abf1ab95.46d11",
-        "name": "Zap Off",
-        "topic": "",
-        "payload": "{\"On\":false}",
-        "payloadType": "json",
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "x": 430,
-        "y": 300,
-        "wires": [
-            [
-                "385de9b.c4c7a96"
-            ]
-        ]
-    },
-    {
-        "id": "870ebb80.5cee28",
-        "type": "homekit-bridge",
-        "z": "",
-        "bridgeName": "Homebridge",
-        "pinCode": "111-11-111",
-        "port": "",
-        "allowInsecureRequest": false,
-        "manufacturer": "Default Manufacturer",
-        "model": "Default Model",
-        "serialNo": "Default Serial Number",
-        "customMdnsConfig": false,
-        "mdnsMulticast": true,
-        "mdnsInterface": "",
-        "mdnsPort": "",
-        "mdnsIp": "",
-        "mdnsTtl": "",
-        "mdnsLoopback": true,
-        "mdnsReuseAddr": true
-    },
-    {
-        "id": "4cfc6208.43ea64",
-        "type": "mqtt-broker",
-        "z": "",
-        "name": "Mosca",
-        "broker": "localhost",
-        "port": "1883",
-        "clientid": "",
-        "usetls": false,
-        "compatmode": true,
-        "keepalive": "60",
-        "cleansession": true,
-        "birthTopic": "",
-        "birthQos": "0",
-        "birthRetain": "false",
-        "birthPayload": "",
-        "closeTopic": "",
-        "closeQos": "0",
-        "closeRetain": "false",
-        "closePayload": "",
-        "willTopic": "/light/nuvola/getState",
-        "willQos": "0",
-        "willRetain": "false",
-        "willPayload": "{\"On\":false}"
-    }
-]
-```
+**For this project you will need the following:**
+
+- A computer capable of running a Node-RED instance (Raspberry,  Orange π, Mac/PC/Linux) with these nodes:
+    - Mosca MQTT Broker
+    - node-red-contrib-homekit-bridged
+- A set of Wireless Remote Control Outlets, supported by the RC-Switch library like these:
+
+![](/img/outlets.example.png "Some Outlets and their remotes") (I have two models from etekcity and SCS both work fine)
+
+- A wi-fi microcontroller like the ESP8266 or ESP32
+- A couple of 433 mhz transmitter and receiver
+
+**HARDWARE**
+
+The microcontroller schematic is basically four cables. Take care to leave some space between the two antennas to avoid interferences. Custom antennas could give you some extra-range, outlets in a 6/7 meters range are perfectly reachable.
+
+![](/img/schematic.example.png "A schematics example")
+
+
+**SOFTWARE**
+
+For this to work you just need to install Node-RED and start it on boot. You can find an example of an outlet flow [here](/node-red/flow.json). You will need one of there for every outlet you'll use.
+
+![](/img/node_red.example.png "A schematics example")
+
+
+**Remote Flow**
+
+The workflow is quite straight, here what happens when you use your remote:
+
+The microcontroller listens the 433Mhz frequence for a code that corresponds to one of your outlets and if it founds one it sends an MQTT message on the corresponding topic. Example:
+
+"0FF00FFF0101" sends "On" to "lights/zap1/setState"
+
+"0FF00FFF0110" sends "Off" to "lights/zap1/setState"
+
+
+The MQTT broker then forwards the same message to the homebridge node that changes the value in your HomeKit app. Now Siri knows that the outlet is on.
+
+**HomeKit Flow**
+
+Same as above, but now is the Node-RED flow that sends the homebridge value (say 'On') to the right outlet topic like "lights/zap1/setState". The microcontroller gets the message and sends the corresponding code ("0FF00FFF0101" in this case) with its 433Mhz transmitter. The outlet turns on.
